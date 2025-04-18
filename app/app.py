@@ -22,11 +22,11 @@ hide_streamlit_style = """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # Import other modules after set_page_config
-from helpers.pdf_utils import extract_text_from_pdf, chunk_text
-from helpers.summary_utils import summarize_chunk
-from helpers.miro_utils import create_miro_mindmap
-from helpers.workbook_utils import generate_workbook
-from helpers.chat_utils import get_chat_bot
+from app.helpers.pdf_utils import extract_text_from_pdf, chunk_text
+from app.helpers.summary_utils import summarize_chunk
+from app.helpers.miro_utils import create_miro_mindmap
+from app.helpers.workbook_utils import generate_workbook
+from app.helpers.chat_utils import get_chat_bot
 
 # Initialize session state to store generated summaries
 if 'final_summary' not in st.session_state:

@@ -1,5 +1,16 @@
 import streamlit as st
 import os
+import sys
+
+# Add the parent directory to the Python path to make app a package
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Now import with correct path
+from helpers.pdf_utils import extract_text_from_pdf, chunk_text
+from helpers.summary_utils import summarize_chunk
+from helpers.miro_utils import create_miro_mindmap
+from helpers.workbook_utils import generate_workbook
+from helpers.chat_utils import get_chat_bot
 
 # Set page config must be the first Streamlit command called
 st.set_page_config(
@@ -7,13 +18,6 @@ st.set_page_config(
     layout="wide",
     page_icon="📘"
 )
-
-# Import other modules after set_page_config
-from app.helpers.pdf_utils import extract_text_from_pdf, chunk_text
-from app.helpers.summary_utils import summarize_chunk
-from app.helpers.miro_utils import create_miro_mindmap
-from app.helpers.workbook_utils import generate_workbook
-from app.helpers.chat_utils import get_chat_bot
 
 # Initialize session state to store generated summaries
 if 'final_summary' not in st.session_state:
@@ -238,29 +242,36 @@ if uploaded_file and api_key:
                     st.write(f"Using fallback chunking: {len(chunks)} chunks")
 
             # Process the chunks to create a unified summary
+            summary_container = st.empty()
             if len(chunks) > 1:  # If we have multiple chunks
-                st.subheader("📌 Generating Summary")
-                progress_bar = st.progress(0)
-                
-                # First pass: Get individual chunk summaries
-                chunk_summaries = []
-                for i, chunk in enumerate(chunks):
-                    with st.spinner(f"Processing part {i+1}/{len(chunks)}..."):
-                        summary_text = summarize_chunk(chunk, is_final=False)
-                        chunk_summaries.append(summary_text)
-                        progress_bar.progress((i + 1) / (len(chunks) + 1))  # +1 for final pass
-                
-                # Second pass: Generate a unified summary from the individual summaries
-                with st.spinner("Creating final consolidated summary..."):
-                    # Combine all summaries into one text
-                    combined_summaries = "\n\n".join(chunk_summaries)
-                    # Generate the final summary
-                    final_summary = summarize_chunk(combined_summaries, is_final=True)
-                    progress_bar.progress(1.0)
+                with summary_container.container():
+                    st.subheader("📌 Generating Summary")
+                    progress_bar = st.progress(0)
+                    
+                    # First pass: Get individual chunk summaries
+                    chunk_summaries = []
+                    for i, chunk in enumerate(chunks):
+                        with st.spinner(f"Processing part {i+1}/{len(chunks)}..."):
+                            summary_text = summarize_chunk(chunk, is_final=False)
+                            chunk_summaries.append(summary_text)
+                            progress_bar.progress((i + 1) / (len(chunks) + 1))  # +1 for final pass
+                    
+                    # Second pass: Generate a unified summary from the individual summaries
+                    with st.spinner("Creating final consolidated summary..."):
+                        # Combine all summaries into one text
+                        combined_summaries = "\n\n".join(chunk_summaries)
+                        # Generate the final summary
+                        final_summary = summarize_chunk(combined_summaries, is_final=True)
+                        progress_bar.progress(1.0)
             else:
                 # Direct summarization for smaller texts
-                with st.spinner("Generating summary..."):
-                    final_summary = summarize_chunk(text, is_final=True)
+                with summary_container.container():
+                    st.subheader("📌 Generating Summary")
+                    with st.spinner("Generating summary..."):
+                        final_summary = summarize_chunk(text, is_final=True)
+            
+            # Clear the summary generation UI elements
+            summary_container.empty()
             
             # Store the final summary in session state
             st.session_state.final_summary = final_summary

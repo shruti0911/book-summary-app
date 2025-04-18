@@ -35,4 +35,22 @@ FROM python:3.11-slim
 ## Solution 5: Update pip
 ```bash
 pip install --upgrade pip
+```
+
+## Solution 6: Fix distutils missing in Python 3.12
+The `distutils` module was removed from the standard library in Python 3.12. If you encounter a `ModuleNotFoundError: No module named 'distutils'` error, you need to install setuptools first:
+
+```bash
+# Install setuptools before any other packages
+pip install setuptools>=69.0.0
+
+# Then install the rest of your requirements
+pip install -r requirements.txt
+```
+
+Alternatively, you can manually create a virtual environment with the system packages included:
+```bash
+python -m venv --system-site-packages venv
+source venv/bin/activate
+pip install -r requirements.txt
 ``` 

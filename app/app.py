@@ -1,6 +1,5 @@
 import streamlit as st
 import os
-import sys
 
 # Set page config must be the first Streamlit command called
 st.set_page_config(
@@ -9,17 +8,12 @@ st.set_page_config(
     page_icon="📘"
 )
 
-# Add the parent directory to the Python path to make helpers accessible
-root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if root_path not in sys.path:
-    sys.path.insert(0, root_path)
-
-# Import helpers with relative imports which work when running directly
-from app.helpers.pdf_utils import extract_text_from_pdf, chunk_text
-from app.helpers.summary_utils import summarize_chunk
-from app.helpers.miro_utils import create_miro_mindmap
-from app.helpers.workbook_utils import generate_workbook
-from app.helpers.chat_utils import get_chat_bot
+# Import other modules after set_page_config
+from helpers.pdf_utils import extract_text_from_pdf, chunk_text
+from helpers.summary_utils import summarize_chunk
+from helpers.miro_utils import create_miro_mindmap
+from helpers.workbook_utils import generate_workbook
+from helpers.chat_utils import get_chat_bot
 
 # Initialize session state to store generated summaries
 if 'final_summary' not in st.session_state:
@@ -74,7 +68,7 @@ with st.sidebar:
         
         **Note:** OpenAI may change their process. If these instructions are outdated, visit [OpenAI's documentation](https://platform.openai.com/docs/quickstart) for the most current information.
         
-        **Cost:** Using this app will consume OpenAI API credits. The app uses GPT-4o mini for both summaries and workbooks. Check OpenAI's [pricing page](https://openai.com/pricing) for current rates.
+        **Cost:** Using this app will consume OpenAI API credits. The app uses GPT-3.5-Turbo for both summaries and workbooks. Check OpenAI's [pricing page](https://openai.com/pricing) for current rates.
         """)
     
     # Feature selection with explanations
@@ -189,12 +183,8 @@ if uploaded_file and api_key:
     if summary and not st.session_state.final_summary:
         try:
             with st.spinner("Preparing text for processing..."):
-                # Implement direct chunking instead of using the function
-                book_size = len(text)
-                # st.write(f"Book size: {book_size} characters")
-                
-                # Direct implementation of chunking with larger chunks
-                # st.write("Using direct chunking with large chunks")
+                # Perform direct chunking instead of using the function
+                book_size = len(st.session_state.text)
                 
                 # Define larger chunk size for big books
                 LARGE_CHUNK_SIZE = 4000  # tokens
@@ -202,10 +192,8 @@ if uploaded_file and api_key:
                 
                 try:
                     import tiktoken
-                    tokenizer = tiktoken.encoding_for_model("gpt-4o-mini")
-                    tokens = tokenizer.encode(text)
-                    
-                    # st.write(f"Book contains {len(tokens)} tokens")
+                    tokenizer = tiktoken.encoding_for_model("gpt-3.5-turbo")
+                    tokens = tokenizer.encode(st.session_state.text)
                     
                     # Create chunks with large size
                     chunks = []
@@ -220,12 +208,9 @@ if uploaded_file and api_key:
                         # Move start position for next chunk, with overlap
                         start += LARGE_CHUNK_SIZE - OVERLAP_SIZE
                     
-                    # st.write(f"Initial chunks: {len(chunks)}")
-                    
                     # Limit to max 100 chunks if needed
                     MAX_CHUNKS = 50  # Lower for even better efficiency
                     if len(chunks) > MAX_CHUNKS:
-                        st.write(f"Optimizing: combining chunks to reduce from {len(chunks)} to ~{MAX_CHUNKS}")
                         combined_chunks = []
                         combine_factor = len(chunks) // MAX_CHUNKS + 1
                         
@@ -235,45 +220,37 @@ if uploaded_file and api_key:
                             combined_chunks.append(combined_text)
                         
                         chunks = combined_chunks
-                        st.write(f"Final chunk count: {len(chunks)}")
                     
                 except Exception as e:
                     st.error(f"Error in chunking: {str(e)}")
                     # Fallback to original function
-                    chunks = chunk_text(text, max_tokens=2000, overlap=100)
+                    chunks = chunk_text(st.session_state.text, max_tokens=2000, overlap=100)
                     st.write(f"Using fallback chunking: {len(chunks)} chunks")
 
             # Process the chunks to create a unified summary
-            summary_container = st.empty()
             if len(chunks) > 1:  # If we have multiple chunks
-                with summary_container.container():
-                    st.subheader("📌 Generating Summary")
-                    progress_bar = st.progress(0)
-                    
-                    # First pass: Get individual chunk summaries
-                    chunk_summaries = []
-                    for i, chunk in enumerate(chunks):
-                        with st.spinner(f"Processing part {i+1}/{len(chunks)}..."):
-                            summary_text = summarize_chunk(chunk, is_final=False)
-                            chunk_summaries.append(summary_text)
-                            progress_bar.progress((i + 1) / (len(chunks) + 1))  # +1 for final pass
-                    
-                    # Second pass: Generate a unified summary from the individual summaries
-                    with st.spinner("Creating final consolidated summary..."):
-                        # Combine all summaries into one text
-                        combined_summaries = "\n\n".join(chunk_summaries)
-                        # Generate the final summary
-                        final_summary = summarize_chunk(combined_summaries, is_final=True)
-                        progress_bar.progress(1.0)
+                st.subheader("📌 Generating Summary")
+                progress_bar = st.progress(0)
+                
+                # First pass: Get individual chunk summaries
+                chunk_summaries = []
+                for i, chunk in enumerate(chunks):
+                    with st.spinner(f"Processing part {i+1}/{len(chunks)}..."):
+                        summary_text = summarize_chunk(chunk, is_final=False)
+                        chunk_summaries.append(summary_text)
+                        progress_bar.progress((i + 1) / (len(chunks) + 1))  # +1 for final pass
+                
+                # Second pass: Generate a unified summary from the individual summaries
+                with st.spinner("Creating final consolidated summary..."):
+                    # Combine all summaries into one text
+                    combined_summaries = "\n\n".join(chunk_summaries)
+                    # Generate the final summary
+                    final_summary = summarize_chunk(combined_summaries, is_final=True)
+                    progress_bar.progress(1.0)
             else:
                 # Direct summarization for smaller texts
-                with summary_container.container():
-                    st.subheader("📌 Generating Summary")
-                    with st.spinner("Generating summary..."):
-                        final_summary = summarize_chunk(text, is_final=True)
-            
-            # Clear the summary generation UI elements
-            summary_container.empty()
+                with st.spinner("Generating summary..."):
+                    final_summary = summarize_chunk(text, is_final=True)
             
             # Store the final summary in session state
             st.session_state.final_summary = final_summary
@@ -410,33 +387,35 @@ if uploaded_file and api_key:
                         st.stop()
                     
                     # Implement direct chunking with large chunks 
-                    book_size = len(text)
-                    # st.write(f"Book size: {book_size} characters")
+                    book_size = len(st.session_state.text)
                     
                     # Direct implementation of chunking with larger chunks
-                    # st.write("Using direct chunking with large chunks")
+                    import tiktoken
                     
                     # Define larger chunk size for big books
                     LARGE_CHUNK_SIZE = 4000  # tokens
                     OVERLAP_SIZE = 150  # tokens
                     
                     try:
-                        tokenizer = tiktoken.encoding_for_model("gpt-4o-mini")
-                        tokens = tokenizer.encode(text)
+                        tokenizer = tiktoken.encoding_for_model("gpt-3.5-turbo")
+                        tokens = tokenizer.encode(st.session_state.text)
                         
-                        # st.write(f"Book contains {len(tokens)} tokens")
+                        # Create chunks with large size
+                        chunks = []
+                        start = 0
                         
-                        # Simple character-based chunking as fallback
-                        max_chunk_size = LARGE_CHUNK_SIZE
-                        
-                        # Simple character-based chunking as fallback
-                        chunks = [text[i:i+max_chunk_size] for i in range(0, len(text), max_chunk_size)]
-                        # st.write(f"Initial chunks: {len(chunks)}")
+                        while start < len(tokens):
+                            end = min(start + LARGE_CHUNK_SIZE, len(tokens))
+                            chunk_tokens = tokens[start:end]
+                            chunk_text = tokenizer.decode(chunk_tokens)
+                            chunks.append(chunk_text)
+                            
+                            # Move start position for next chunk, with overlap
+                            start += LARGE_CHUNK_SIZE - OVERLAP_SIZE
                         
                         # Limit to max 50 chunks if needed
                         MAX_CHUNKS = 50  # Lower for efficiency
                         if len(chunks) > MAX_CHUNKS:
-                            st.write(f"Optimizing: combining chunks to reduce from {len(chunks)} to ~{MAX_CHUNKS}")
                             combined_chunks = []
                             combine_factor = len(chunks) // MAX_CHUNKS + 1
                             
@@ -446,12 +425,30 @@ if uploaded_file and api_key:
                                 combined_chunks.append(combined_text)
                             
                             chunks = combined_chunks
-                            st.write(f"Final chunk count: {len(chunks)}")
+                        
+                        # Initialize the chat bot with chunks
+                        chat_bot.initialize_from_chunks(chunks)
+                        
+                        # Check if initialization was successful
+                        if chat_bot.is_initialized:
+                            # Mark as initialized
+                            st.session_state.chat_initialized = True
+                            
+                            # Add welcome message
+                            if not st.session_state.chat_messages:
+                                st.session_state.chat_messages.append({
+                                    "role": "assistant",
+                                    "content": "Hello! I'm your book assistant. Ask me any questions about the book you've uploaded."
+                                })
+                            
+                            st.rerun()
+                        else:
+                            st.error("Chat assistant initialization failed. Please check your API key and try again.")
                     
                     except Exception as e:
                         st.error(f"Error in chunking: {str(e)}")
                         # Fallback to standard chunking
-                        chunks = chunk_text(text, max_tokens=1000)
+                        chunks = chunk_text(st.session_state.text, max_tokens=1000)
                         st.write(f"Using fallback chunking: {len(chunks)} chunks")
                     
                     # Initialize the chat bot with chunks

@@ -1,1 +1,1 @@
- 
+# Book Summarizer helpers package 

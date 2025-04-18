@@ -29,15 +29,15 @@ Format the summary hierarchically using clear headings and bullet points:
 
 # [BOOK TITLE/CENTRAL CONCEPT]
 
-## [Major Theme 1] # This is the main theme of the book don't write "Major Theme 1:", just write actually the main theme of the book
-- [Key point 1a] # This is the main theme of the book don't write "Key point 1a", just write actually the key point of the book
-- [Key point 1b] # This is the main theme of the book don't write "Key point 1b", just write actually the key point of the book
-- [Key point 1c] # This is the main theme of the book don't write "Key point 1c", just write actually the key point of the book
+## Major Theme 1
+- Key point 1a
+- Key point 1b
+- Key point 1c
 
-## [Major Theme 2] # This is the main theme of the book don't write "Major Theme 2:", just write actually the main theme of the book
-- [Key point 2a] # This is the main theme of the book don't write "Key point 2a", just write actually the key point of the book
-- [Key point 2b] # This is the main theme of the book don't write "Key point 2b", just write actually the key point of the book
-- [Key point 2c] # This is the main theme of the book don't write "Key point 2c", just write actually the key point of the book
+## Major Theme 2
+- Key point 2a
+- Key point 2b
+- Key point 2c
 
 And so on. This format will make it easy to transfer to a mind mapping tool.
 
@@ -49,19 +49,6 @@ Notes:
 - Focus on ideas rather than summaries of chapters
 - Maintain the book's original insights and principles
 - Create clear hierarchical relationships between concepts
-
-Example:
-# The Art of War
-
-## Strategy
-- Great leaders define a clear north star, but remain adaptive in how they get there.
-- Leadership is about enabling others to do their best work
-- The best leaders are great at both strategy and execution
-
-## Leadership
-- The best leaders are great at both strategy and execution
-- Great leaders define a clear north star, but remain adaptive in how they get there.
-- Leadership is about enabling others to do their best work
 """
 
 def summarize_chunk(chunk, is_final=True):
@@ -85,8 +72,8 @@ def summarize_chunk(chunk, is_final=True):
         # Select the appropriate prompt based on whether this is a final summary or not
         prompt = FINAL_PROMPT if is_final else CHUNK_PROMPT
         
-        # Use GPT-4o mini for a good balance of quality and cost
-        model = "gpt-4o-mini"
+        # Always use GPT-3.5-turbo to save on credits
+        model = "gpt-3.5-turbo"
         
         # Using the new OpenAI API format
         response = client.chat.completions.create(
@@ -95,7 +82,7 @@ def summarize_chunk(chunk, is_final=True):
                 {"role": "system", "content": "You are a helpful assistant that summarizes nonfiction books in a format ideal for creating mind maps."},
                 {"role": "user", "content": prompt.format(chunk=chunk)}
             ],
-            temperature=0.8 if is_final else 0.5  # Lower temperature for intermediate summaries
+            temperature=0.7 if is_final else 0.5  # Lower temperature for intermediate summaries
         )
         
         # Extract the response content using the new format

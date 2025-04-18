@@ -9,55 +9,15 @@ st.set_page_config(
     page_icon="📘"
 )
 
-# Add parent directory to the path to access helpers
+# Add the parent directory to the Python path to make helpers accessible
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Try to import from helpers
-try:
-    from helpers.pdf_utils import extract_text_from_pdf, chunk_text
-    from helpers.summary_utils import summarize_chunk
-    from helpers.miro_utils import create_miro_mindmap
-    from helpers.workbook_utils import generate_workbook
-    from helpers.chat_utils import get_chat_bot
-except ImportError:
-    # If that fails, try relative imports
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    try:
-        from ..helpers.pdf_utils import extract_text_from_pdf, chunk_text
-        from ..helpers.summary_utils import summarize_chunk
-        from ..helpers.miro_utils import create_miro_mindmap
-        from ..helpers.workbook_utils import generate_workbook
-        from ..helpers.chat_utils import get_chat_bot
-    except ImportError:
-        # Last resort, check for local helpers directory
-        try:
-            import importlib.util
-            import os.path
-            
-            # Define paths to modules
-            base_dir = os.path.dirname(os.path.abspath(__file__))
-            modules = ['pdf_utils', 'summary_utils', 'miro_utils', 'workbook_utils', 'chat_utils']
-            
-            # Dynamic import
-            for module_name in modules:
-                path = os.path.join(base_dir, 'helpers', f"{module_name}.py")
-                if os.path.exists(path):
-                    spec = importlib.util.spec_from_file_location(module_name, path)
-                    module = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(module)
-                    globals()[module_name] = module
-            
-            # Set functions from modules
-            extract_text_from_pdf = pdf_utils.extract_text_from_pdf
-            chunk_text = pdf_utils.chunk_text
-            summarize_chunk = summary_utils.summarize_chunk
-            create_miro_mindmap = miro_utils.create_miro_mindmap
-            generate_workbook = workbook_utils.generate_workbook
-            get_chat_bot = chat_utils.get_chat_bot
-            
-        except Exception as e:
-            st.error(f"Critical error: Could not import required modules: {str(e)}")
-            st.stop()
+# Import helpers directly (not through app.helpers)
+from helpers.pdf_utils import extract_text_from_pdf, chunk_text
+from helpers.summary_utils import summarize_chunk
+from helpers.miro_utils import create_miro_mindmap
+from helpers.workbook_utils import generate_workbook
+from helpers.chat_utils import get_chat_bot
 
 # Initialize session state to store generated summaries
 if 'final_summary' not in st.session_state:

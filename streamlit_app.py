@@ -1,8 +1,11 @@
 import os
 import sys
+import streamlit.web.bootstrap as bootstrap
 
-# Add the project root to the Python path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add the current directory to path so relative imports work
+root_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, root_dir)
 
-# Simply import everything from app.py (which itself imports from app/app.py)
-from app import * 
+# Run the app from the app directory
+filename = os.path.join(root_dir, "app", "app.py")
+bootstrap.run(filename, "", [], {}) 

@@ -12,12 +12,25 @@ st.set_page_config(
 # Add the parent directory to the Python path to make helpers accessible
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Import helpers directly (not through app.helpers)
-from helpers.pdf_utils import extract_text_from_pdf, chunk_text
-from helpers.summary_utils import summarize_chunk
-from helpers.miro_utils import create_miro_mindmap
-from helpers.workbook_utils import generate_workbook
-from helpers.chat_utils import get_chat_bot
+# Try importing helpers with different import styles depending on how the app is run
+try:
+    # First try app.helpers (when running via streamlit_app.py)
+    from app.helpers.pdf_utils import extract_text_from_pdf, chunk_text
+    from app.helpers.summary_utils import summarize_chunk
+    from app.helpers.miro_utils import create_miro_mindmap
+    from app.helpers.workbook_utils import generate_workbook
+    from app.helpers.chat_utils import get_chat_bot
+except ImportError:
+    try:
+        # Then try direct import (when running directly)
+        from helpers.pdf_utils import extract_text_from_pdf, chunk_text
+        from helpers.summary_utils import summarize_chunk
+        from helpers.miro_utils import create_miro_mindmap
+        from helpers.workbook_utils import generate_workbook
+        from helpers.chat_utils import get_chat_bot
+    except ImportError:
+        st.error("Could not import helper modules. Please check your folder structure.")
+        raise
 
 # Initialize session state to store generated summaries
 if 'final_summary' not in st.session_state:

@@ -1,5 +1,18 @@
 import streamlit as st
 import os
+import sys
+
+# Add app/helpers to the Python path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+helpers_path = os.path.join(current_dir, 'app', 'helpers')
+if os.path.exists(helpers_path):
+    # Create a module alias for helpers
+    sys.path.insert(0, current_dir)
+    if 'helpers' not in sys.modules:
+        import app.helpers as helpers_module
+        sys.modules['helpers'] = helpers_module
+    # For direct imports of submodules
+    sys.path.insert(0, os.path.dirname(helpers_path))
 
 # Set page config must be the first Streamlit command called
 st.set_page_config(
@@ -22,11 +35,19 @@ hide_streamlit_style = """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # Import other modules after set_page_config
-from helpers.pdf_utils import extract_text_from_pdf, chunk_text
-from helpers.summary_utils import summarize_chunk
-from helpers.miro_utils import create_miro_mindmap
-from helpers.workbook_utils import generate_workbook
-from helpers.chat_utils import get_chat_bot
+try:
+    from helpers.pdf_utils import extract_text_from_pdf, chunk_text
+    from helpers.summary_utils import summarize_chunk
+    from helpers.miro_utils import create_miro_mindmap
+    from helpers.workbook_utils import generate_workbook
+    from helpers.chat_utils import get_chat_bot
+except ImportError:
+    # Fallback to direct imports from app.helpers
+    from app.helpers.pdf_utils import extract_text_from_pdf, chunk_text
+    from app.helpers.summary_utils import summarize_chunk
+    from app.helpers.miro_utils import create_miro_mindmap
+    from app.helpers.workbook_utils import generate_workbook
+    from app.helpers.chat_utils import get_chat_bot
 
 # Initialize session state to store generated summaries
 if 'final_summary' not in st.session_state:

@@ -8,6 +8,9 @@ A Streamlit application that summarizes non-fiction books and creates mind maps 
 - Generate detailed summaries using OpenAI
 - Create visual mind maps in Miro
 - Option to download summaries as text files
+- 🔍 Process large PDFs by breaking them into manageable chunks
+- 📊 Generate insightful summaries identifying key themes and principles
+- 💬 Chat with Book Assistant
 
 ## Local Development
 
@@ -41,4 +44,4 @@ miro = "your-miro-access-token"
 
 ## License
 
-MIT 
+MIT

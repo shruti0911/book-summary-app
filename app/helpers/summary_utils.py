@@ -4,65 +4,127 @@ import streamlit as st
 
 # Prompt for initial chunk processing - focused on extracting key information
 CHUNK_PROMPT = """
-Extract the key information from this section of a non-fiction book. Focus on:
-1. Main concepts and ideas
-2. Key arguments and supporting evidence
-3. Important facts, figures, and examples
-4. Actionable insights and takeaways
+You are an expert at summarizing non-fiction books using first principles thinking. First principles are fundamental truths or assumptions that cannot be reduced further.
 
-Be comprehensive but concise. This is an intermediate summary that will be used to create a final book summary.
+Your task is to extract the key information from this section of a non-fiction book. Focus on identifying **major themes** and for each theme, summarize:
 
-# Book Content
+1. Core ideas and concepts
+2. Key arguments or reasoning
+3. Important facts, data, or examples
+4. Actionable insights or takeaways
+
+Use the format below:
+
+# [Book Title]
+
+## [Major Theme 1]
+- [Key Point 1A]
+- [Key Point 1B]
+- [Key Point 1C]
+
+## [Major Theme 2]
+- [Key Point 2A]
+- [Key Point 2B]
+- [Key Point 2C]
+
+Be comprehensive but concise. Do not list chapters or refer to the book's structure. Use your judgment to identify themes based on content.
+
+# Book Content:
 {chunk}
+
+Notes:
+- Think from first principles: what's the core insight behind this?
+- Use clear bullet points.
+- Do not write "Major Theme 1:" in your output—just use the heading for the theme name.
+- Include examples or stats when mentioned, but summarize them.
+- Do not make themes repetetive, make sure themes are unique and not overlapping.
+
+Example of chunk output:
+# Deep Work
+
+## The Value of Deep Work
+- Deep work enables mastery of complex tasks
+- It creates more value per hour than shallow work
+- Professionals who cultivate deep work thrive in a competitive economy
+
+## Distraction is the Enemy
+- Constant connectivity weakens focus
+- Social media and open-plan offices increase cognitive switching costs
+- Focus is a skill that must be trained
+
+## Training the Mind
+- Deep work must be scheduled deliberately
+- Rituals and routines help sustain deep focus
+- Mental clarity improves with practice and time-blocking
 """
 
 # Prompt for final summary - optimized for mind mapping
 FINAL_PROMPT = """
-Create a summary of this non-fiction book that is well-structured for mind mapping. Your summary should:
+Summarize this non-fiction book in a structure that can easily be transferred to a mind map.
 
-1. Identify a central theme or main concept of the book
-2. Extract 5-8 major themes/branches that connect to the central concept
-3. For each major theme, identify 3-5 key supporting ideas, insights, or action points
-4. Include specific examples, facts, or quotes that illustrate key points (when available)
+Focus on:
+1. A **central concept** that unifies the book's message (do not make this a separate heading)
+2. 5–8 major themes (branches from the central concept)
+3. For each theme, include 3–5 bullet points of:
+   - Core insights (from a first-principles perspective)
+   - Supporting reasoning or examples
+   - Actionable ideas
 
-Format the summary hierarchically using clear headings and bullet points:
+Use this format:
 
 # [BOOK TITLE]
 
-## [Major Theme 1] # This is the main theme of the book don't write "Major Theme 1:", just write actually the main theme of the book        
-- [Key point 1a] # This is the main theme of the book don't write "Key point 1a", just write actually the key point of the book
-- [Key point 1b] # This is the main theme of the book don't write "Key point 1b", just write actually the key point of the book
-- [Key point 1c] # This is the main theme of the book don't write "Key point 1c", just write actually the key point of the book
+## [Major Theme 1]
+- [Key Point 1A]
+- [Key Point 1B]
+- [Key Point 1C]
 
-## [Major Theme 2] # This is the main theme of the book don't write "Major Theme 2:", just write actually the main theme of the book
-- [Key point 2a] # This is the main theme of the book don't write "Key point 2a", just write actually the key point of the book
-- [Key point 2b] # This is the main theme of the book don't write "Key point 2b", just write actually the key point of the book
-- [Key point 2c] # This is the main theme of the book don't write "Key point 2c", just write actually the key point of the book
+## [Major Theme 2]
+- [Key Point 2A]
+- [Key Point 2B]
+- [Key Point 2C]
 
-And so on. This format and check example to understand the format. This will make it easy to transfer to a mind mapping tool.
+Avoid summarizing chapters. Instead, extract the **essence** of what the book teaches.
 
-# Book Content
+# Book Content:
 {chunk}
 
 Notes:
-- Use concise, actionable language
-- Focus on ideas rather than summaries of chapters
-- Maintain the book's original insights and principles
-- Create clear hierarchical relationships between concepts
+- Do not use "Major Theme 1" as a label—just use the actual theme name as the heading.
+- Think deeply—what are the foundational truths?
+- Use concise, powerful language.
+- This summary is for a mind map—make connections clean and logical.
+- Do not make themes repetetive, make sure themes are unique and not overlapping.
 
-Example:
-# The Art of War
+Example of output:
+# Deep Work
 
-## Strategy
-- Great leaders define a clear north star, but remain adaptive in how they get there.
-- Leadership is about enabling others to do their best work. 
-- Leaders must be able to see the big picture while also attending to the details.
+## Focus as a Superpower
+- Deep work enables learning, creativity, and output
+- Most knowledge workers are stuck in shallow work
+- Attention is a competitive advantage
 
-## Leadership
-- Leaders must be able to see the big picture while also attending to the details.
-- Leaders must be able to see the big picture while also attending to the details.
-- Leaders must be able to see the big picture while also attending to the details.
+## Dangers of Distraction
+- Social media and multitasking erode cognitive ability
+- Shallow habits become default in a noisy environment
+- Digital minimalism supports sustained focus
+
+## Cultivating Deep Work
+- Schedule focused blocks of uninterrupted work
+- Use rituals (location, time, tools) to enter deep mode
+- Track deep work hours to measure progress
+
+## Embrace Boredom
+- Downtime trains the brain to resist novelty
+- Boredom builds cognitive resilience
+- Avoid context-switching and embrace monotony
+
+## Make Deep Work a Lifestyle
+- High performers protect time like a fortress
+- Reduce shallow obligations ruthlessly
+- Align deep work with life goals and identity
 """
+
 
 def summarize_chunk(chunk, is_final=True):
     """
@@ -72,30 +134,30 @@ def summarize_chunk(chunk, is_final=True):
         chunk: The text to summarize
         is_final: If True, creates a polished final summary. If False, creates an intermediate summary for further processing.
     """
+    # Check for API key
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        st.error("⚠️ OpenAI API key is missing. Please enter your API key in the sidebar.")
+        return None
+    
+    # Initialize the client
+    client = OpenAI(api_key=api_key)
+    
+    # Use GPT-4o-mini for better quality summaries
+    model = "gpt-4o-mini"
+    
     try:
-        # Check for API key
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            st.error("⚠️ OpenAI API key is missing. Please enter your API key in the sidebar.")
-            return "Please enter your OpenAI API key in the sidebar first."
-            
-        # Initialize the client here (not at module level)
-        client = OpenAI(api_key=api_key)
-        
-        # Select the appropriate prompt based on whether this is a final summary or not
+        # Determine the appropriate prompt based on whether this is a final summary
         prompt = FINAL_PROMPT if is_final else CHUNK_PROMPT
         
-        # Update from GPT-3.5-turbo to GPT-4o mini
-        model = "gpt-4o-mini"
-        
-        # Using the new OpenAI API format
+        # Make the request to OpenAI API
         response = client.chat.completions.create(
             model=model,
             messages=[
-                {"role": "system", "content": "You are a helpful assistant that summarizes nonfiction books in a format ideal for creating mind maps."},
+                {"role": "system", "content": "You are a helpful assistant that creates concise and informative summaries of text while preserving the key information."},
                 {"role": "user", "content": prompt.format(chunk=chunk)}
             ],
-            temperature=0.7 if is_final else 0.5  # Lower temperature for intermediate summaries
+            temperature=0.5
         )
         
         # Extract the response content using the new format

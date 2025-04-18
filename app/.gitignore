@@ -1,0 +1,25 @@
+# Ignore virtual environments
+.venv/
+pymupdf-venv/
+env/
+venv/
+
+# Ignore Python build/dist metadata
+*.dist-info/
+*.egg-info/
+
+# Ignore binaries and large folders
+bin/
+pymupdf/
+fitz/
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore secrets (if you create this later)
+.streamlit/secrets.toml
+
+# macOS system file
+.DS_Store

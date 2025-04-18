@@ -91,8 +91,8 @@ def chunk_text(text, max_tokens=1000, overlap=100, aggressive_chunking=False):
             
             st.info(f"Using optimized chunking for large document: {max_tokens} tokens per chunk")
         
-        # Keep using gpt-3.5-turbo tokenizer for chunking since it's just for tokenization
-        tokenizer = tiktoken.encoding_for_model("gpt-3.5-turbo")
+        # Initialize tokenizer for GPT-4o-mini for more accurate token counting
+        tokenizer = tiktoken.encoding_for_model("gpt-4o-mini")
         tokens = tokenizer.encode(text)
         
         chunks = []

@@ -143,10 +143,115 @@ def create_miro_board(access_token, board_name):
 
 def create_mind_map_shape(access_token, board_id, text, x=0, y=0, width=200, height=100, style=None):
     """Create a mind map shape on a Miro board.
-    Now uses cards instead of sticky notes."""
+    Now uses shapes (rectangles) instead of cards or sticky notes."""
     
-    # Use cards instead of sticky notes
-    return create_miro_card(access_token, board_id, text, x, y, width, height, style)
+    # Use shapes (rectangles) as the primary node type
+    return create_miro_shape(access_token, board_id, text, x, y, width, height, style)
+
+def create_miro_shape(access_token, board_id, text, x=0, y=0, width=200, height=100, style=None):
+    """Create a shape (rectangle) on a Miro board with centered text and borders."""
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "Authorization": f"Bearer {access_token}"
+    }
+    
+    # Make sure text is not None
+    if text is None:
+        text = "Untitled"
+    
+    # Ensure text is a string - shapes can handle much longer text
+    text = str(text)
+    
+    # Get the style color if provided (using valid hex colors)
+    fill_color = None
+    if style and "fillColor" in style:
+        # Convert named colors to valid hex codes
+        color_map = {
+            "light_blue": "#8fd3f4",
+            "light_green": "#d5f692", 
+            "light_yellow": "#f5f29f",
+            "light_pink": "#fec6e9",
+            "light_orange": "#ffcc99"
+        }
+        fill_color = color_map.get(style["fillColor"], "#f5f29f")  # Default to light yellow
+    else:
+        # Default color if none provided
+        fill_color = "#f5f29f"  # Light yellow
+    
+    # Basic rectangle shape with no styling initially
+    payload = {
+        "data": {
+            "content": text,
+            "shape": "rectangle"
+        },
+        "geometry": {
+            "width": width,
+            "height": height
+        }
+    }
+    
+    # Add position
+    if x != 0 or y != 0:
+        payload["position"] = {
+            "x": x,
+            "y": y
+        }
+    
+    try:
+        # Create the basic shape first
+        response = requests.post(
+            f"https://api.miro.com/v2/boards/{board_id}/shapes",
+            headers=headers,
+            json=payload
+        )
+        
+        # If successful, apply styling in a separate request
+        if response.status_code in [200, 201]:
+            shape_data = response.json()
+            shape_id = shape_data.get("id")
+            
+            # Apply styling as a separate update
+            if shape_id:
+                try:
+                    update_headers = {
+                        "accept": "application/json",
+                        "content-type": "application/json",
+                        "Authorization": f"Bearer {access_token}"
+                    }
+                    
+                    # Apply color and text alignment
+                    update_payload = {
+                        "style": {
+                            "fillColor": fill_color,
+                            "borderColor": "#000000"  # Black border
+                        }
+                    }
+                    
+                    update_response = requests.patch(
+                        f"https://api.miro.com/v2/boards/{board_id}/shapes/{shape_id}",
+                        headers=update_headers,
+                        json=update_payload
+                    )
+                    
+                    if update_response.status_code not in [200, 201]:
+                        st.info(f"Note: Shape styling not applied: {update_response.text}")
+                except Exception as update_error:
+                    st.info(f"Note: Shape styling not applied: {str(update_error)}")
+            
+            return shape_data
+            
+        # Fall back to sticky note if shape creation fails
+        if response.status_code != 201 and response.status_code != 200:
+            st.error(f"Error creating shape: {response.status_code} - {response.text}")
+            return create_miro_sticky_note(access_token, board_id, text, x, y, width, height, style)
+            
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        st.error(f"Error creating Miro shape: {str(e)}")
+        # Fall back to sticky note if shape creation fails
+        return create_miro_sticky_note(access_token, board_id, text, x, y, width, height, style)
 
 def create_mindmap_structure(access_token, board_id, structure):
     """Create the mind map structure on a Miro board."""

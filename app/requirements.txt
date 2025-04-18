@@ -1,0 +1,7 @@
+streamlit==1.32.0
+openai==1.74.0
+tiktoken==0.9.0
+PyMuPDF==1.25.5        # Correct casing! (important)
+PyPDF2==3.0.1          # Also fix casing
+requests==2.32.3
+numpy==1.25.0

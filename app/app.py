@@ -8,6 +8,19 @@ st.set_page_config(
     page_icon="📘"
 )
 
+# Hide footer "Made with Streamlit"
+hide_streamlit_style = """
+    <style>
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        footer:after {
+            content:''; 
+            visibility: hidden;
+        }
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 # Import other modules after set_page_config
 from helpers.pdf_utils import extract_text_from_pdf, chunk_text
 from helpers.summary_utils import summarize_chunk
@@ -68,7 +81,7 @@ with st.sidebar:
         
         **Note:** OpenAI may change their process. If these instructions are outdated, visit [OpenAI's documentation](https://platform.openai.com/docs/quickstart) for the most current information.
         
-        **Cost:** Using this app will consume OpenAI API credits. The app uses GPT-3.5-Turbo for both summaries and workbooks. Check OpenAI's [pricing page](https://openai.com/pricing) for current rates.
+        **Cost:** Using this app will consume OpenAI API credits. The app uses GPT-4o-mini for all features (summaries, workbooks, and chat). Check OpenAI's [pricing page](https://openai.com/pricing) for current rates.
         """)
     
     # Feature selection with explanations
@@ -150,12 +163,14 @@ if st.session_state.pdf_processed:
         st.session_state.workbook_exercises = None
         st.session_state.chat_initialized = False
         st.session_state.chat_messages = []
-        st.rerun()
+        st.experimental_rerun()
 
 # File uploader
-uploaded_file = st.file_uploader("Upload your PDF", type=["pdf"], 
-                                key="pdf_uploader", 
-                                on_change=lambda: setattr(st.session_state, 'text_extracted', False))
+uploaded_file = st.file_uploader("Upload your PDF", type=["pdf"], key="pdf_uploader")
+
+# Reset text_extracted state when a new file is uploaded (without debug info)
+if uploaded_file:
+    st.session_state.text_extracted = False
 
 if uploaded_file and api_key:
     if not st.session_state.text_extracted:
@@ -183,20 +198,17 @@ if uploaded_file and api_key:
     if summary and not st.session_state.final_summary:
         try:
             with st.spinner("Preparing text for processing..."):
-                # Perform direct chunking instead of using the function
-                book_size = len(st.session_state.text)
-                
+                # Implement direct chunking instead of using the function
                 # Define larger chunk size for big books
                 LARGE_CHUNK_SIZE = 4000  # tokens
                 OVERLAP_SIZE = 150  # tokens
                 
                 try:
                     import tiktoken
-                    # Keep using gpt-3.5-turbo tokenizer for chunking since it's just for tokenization
-                    tokenizer = tiktoken.encoding_for_model("gpt-3.5-turbo")
+                    tokenizer = tiktoken.encoding_for_model("gpt-4o-mini")
                     tokens = tokenizer.encode(st.session_state.text)
                     
-                    # Create chunks with large size
+                    # Create chunks with large size (no debug messages)
                     chunks = []
                     start = 0
                     
@@ -209,7 +221,7 @@ if uploaded_file and api_key:
                         # Move start position for next chunk, with overlap
                         start += LARGE_CHUNK_SIZE - OVERLAP_SIZE
                     
-                    # Limit to max 100 chunks if needed
+                    # Limit to max 100 chunks if needed (no debug messages)
                     MAX_CHUNKS = 50  # Lower for even better efficiency
                     if len(chunks) > MAX_CHUNKS:
                         combined_chunks = []
@@ -223,30 +235,29 @@ if uploaded_file and api_key:
                         chunks = combined_chunks
                     
                 except Exception as e:
-                    st.error(f"Error in chunking: {str(e)}")
-                    # Fallback to original function
+                    # Fallback to original function without debug messages
                     chunks = chunk_text(st.session_state.text, max_tokens=2000, overlap=100)
-                    st.write(f"Using fallback chunking: {len(chunks)} chunks")
 
             # Process the chunks to create a unified summary
             if len(chunks) > 1:  # If we have multiple chunks
-                st.subheader("📌 Generating Summary")
-                progress_bar = st.progress(0)
-                
-                # First pass: Get individual chunk summaries
-                chunk_summaries = []
-                for i, chunk in enumerate(chunks):
-                    with st.spinner(f"Processing part {i+1}/{len(chunks)}..."):
+                with st.spinner("Generating summary..."):
+                    # Show progress bar during generation
+                    progress_bar = st.progress(0)
+                    
+                    # First pass: Get individual chunk summaries
+                    chunk_summaries = []
+                    for i, chunk in enumerate(chunks):
                         summary_text = summarize_chunk(chunk, is_final=False)
                         chunk_summaries.append(summary_text)
-                        progress_bar.progress((i + 1) / (len(chunks) + 1))  # +1 for final pass
-                
-                # Second pass: Generate a unified summary from the individual summaries
-                with st.spinner("Creating final consolidated summary..."):
-                    # Combine all summaries into one text
+                        # Update progress bar
+                        progress = (i + 1) / (len(chunks) + 1)  # +1 for final pass
+                        progress_bar.progress(progress)
+                    
+                    # Second pass: Generate a unified summary from the individual summaries
                     combined_summaries = "\n\n".join(chunk_summaries)
                     # Generate the final summary
                     final_summary = summarize_chunk(combined_summaries, is_final=True)
+                    # Complete the progress bar
                     progress_bar.progress(1.0)
             else:
                 # Direct summarization for smaller texts
@@ -298,7 +309,7 @@ if uploaded_file and api_key:
                                 st.session_state.miro_mindmap_url = result["board_url"]
                                 st.success(f"New mind map created! [View your mind map in Miro]({result['board_url']})")
                                 st.markdown(f"<iframe src='{result['board_url']}' width='100%' height='500px'></iframe>", unsafe_allow_html=True)
-                                st.rerun()  # Refresh the UI
+                                st.experimental_rerun()  # Refresh the UI
                             else:
                                 st.error(f"Failed to create new mind map: {result.get('error', 'Unknown error')}")
                         except Exception as e:
@@ -344,6 +355,10 @@ if uploaded_file and api_key:
     if workbook:
         st.subheader("📓 Workbook")
         
+        # Initialize workbook generation state if not exists
+        if 'generating_workbook' not in st.session_state:
+            st.session_state.generating_workbook = False
+        
         # Check if we already have a workbook
         if st.session_state.workbook_exercises:
             st.markdown(st.session_state.workbook_exercises)
@@ -358,22 +373,31 @@ if uploaded_file and api_key:
             )
             
             # Add a regenerate button
-            if st.button("Regenerate Workbook"):
-                with st.spinner("Creating new workbook exercises..."):
-                    st.session_state.workbook_exercises = generate_workbook(st.session_state.final_summary)
-                    st.rerun()
+            if st.button("Regenerate Workbook") and not st.session_state.generating_workbook:
+                # Set generating flag to prevent duplicate spinners
+                st.session_state.generating_workbook = True
+                st.experimental_rerun()
+                
+        # If we're in the middle of generating, do the actual work
+        elif st.session_state.generating_workbook:
+            with st.spinner("Creating workbook exercises..."):
+                workbook_text = generate_workbook(st.session_state.final_summary)
+                st.session_state.workbook_exercises = workbook_text
+                st.session_state.generating_workbook = False  # Reset the flag
+                st.experimental_rerun()
         
         # Generate workbook if we have a summary but no workbook yet
         elif st.session_state.final_summary:
-            if st.button("Generate Workbook"):
-                with st.spinner("Creating workbook exercises..."):
-                    st.session_state.workbook_exercises = generate_workbook(st.session_state.final_summary)
-                    st.rerun()
+            if st.button("Generate Workbook") and not st.session_state.generating_workbook:
+                # Set generating flag to prevent duplicate spinners
+                st.session_state.generating_workbook = True
+                st.experimental_rerun()
+        
         else:
             st.info("Generate a summary first before creating a workbook.")
 
     if assistant:
-        st.subheader("💬 Chat with Book Assistant")
+        st.subheader("💬 Chat with BookGPT")
         
         # Initialize chat bot if we have PDF text but not initialized yet
         if st.session_state.text_extracted and not st.session_state.chat_initialized:
@@ -387,19 +411,13 @@ if uploaded_file and api_key:
                         st.error("Failed to initialize chat assistant. Please check your API key.")
                         st.stop()
                     
-                    # Implement direct chunking with large chunks 
-                    book_size = len(st.session_state.text)
-                    
-                    # Direct implementation of chunking with larger chunks
-                    import tiktoken
-                    
-                    # Define larger chunk size for big books
+                    # Define larger chunk size for big books (without debug messages)
                     LARGE_CHUNK_SIZE = 4000  # tokens
                     OVERLAP_SIZE = 150  # tokens
                     
                     try:
-                        # Keep using gpt-3.5-turbo tokenizer for chunking since it's just for tokenization
-                        tokenizer = tiktoken.encoding_for_model("gpt-3.5-turbo")
+                        import tiktoken
+                        tokenizer = tiktoken.encoding_for_model("gpt-4o-mini")
                         tokens = tokenizer.encode(st.session_state.text)
                         
                         # Create chunks with large size
@@ -427,31 +445,10 @@ if uploaded_file and api_key:
                                 combined_chunks.append(combined_text)
                             
                             chunks = combined_chunks
-                        
-                        # Initialize the chat bot with chunks
-                        chat_bot.initialize_from_chunks(chunks)
-                        
-                        # Check if initialization was successful
-                        if chat_bot.is_initialized:
-                            # Mark as initialized
-                            st.session_state.chat_initialized = True
-                            
-                            # Add welcome message
-                            if not st.session_state.chat_messages:
-                                st.session_state.chat_messages.append({
-                                    "role": "assistant",
-                                    "content": "Hello! I'm your book assistant. Ask me any questions about the book you've uploaded."
-                                })
-                            
-                            st.rerun()
-                        else:
-                            st.error("Chat assistant initialization failed. Please check your API key and try again.")
                     
                     except Exception as e:
-                        st.error(f"Error in chunking: {str(e)}")
                         # Fallback to standard chunking
                         chunks = chunk_text(st.session_state.text, max_tokens=1000)
-                        st.write(f"Using fallback chunking: {len(chunks)} chunks")
                     
                     # Initialize the chat bot with chunks
                     chat_bot.initialize_from_chunks(chunks)
@@ -465,50 +462,76 @@ if uploaded_file and api_key:
                         if not st.session_state.chat_messages:
                             st.session_state.chat_messages.append({
                                 "role": "assistant",
-                                "content": "Hello! I'm your book assistant. Ask me any questions about the book you've uploaded."
+                                "content": "Hello! I'm BookGPT. Ask me any questions about the book you've uploaded."
                             })
                         
-                        st.rerun()
+                        st.experimental_rerun()
                     else:
                         st.error("Chat assistant initialization failed. Please check your API key and try again.")
         
         # Display chat interface if chat is initialized
         elif st.session_state.chat_initialized:
-            # Display chat messages
-            for message in st.session_state.chat_messages:
-                with st.chat_message(message["role"]):
-                    st.markdown(message["content"])
+            # Create a clean chat container without any dividers
+            chat_container = st.container()
+            with chat_container:
+                # Use a clean chat display without horizontal lines
+                for i, message in enumerate(st.session_state.chat_messages):
+                    # Create different styling based on message role
+                    if message["role"] == "assistant":
+                        st.markdown(f"**BookGPT:** {message['content']}")
+                    else:
+                        st.markdown(f"**You:** {message['content']}")
+                    
+                    # Add slight padding between messages
+                    st.markdown("<div style='margin-bottom: 10px;'></div>", unsafe_allow_html=True)
             
-            # Chat input
-            user_query = st.chat_input("Ask a question about the book")
+            # Simplified chat input form with auto-submission
+            # Initialize chat input if not exists
+            if 'chat_input' not in st.session_state:
+                st.session_state.chat_input = ""
+                
+            # Function to handle form submission
+            def handle_submit():
+                user_query = st.session_state.chat_input
+                if user_query:
+                    # Add user message to chat history
+                    st.session_state.chat_messages.append({"role": "user", "content": user_query})
+                    # Clear input after submission
+                    st.session_state.chat_input = ""
+                    # Trigger message processing
+                    st.session_state.process_message = True
             
-            if user_query:
-                # Add user message to chat history
-                st.session_state.chat_messages.append({"role": "user", "content": user_query})
+            # Simple text input with on_change callback to handle Enter
+            user_query = st.text_input("Ask a question about the book:", 
+                                        key="chat_input", 
+                                        on_change=handle_submit)
+            
+            # Process message if needed
+            if 'process_message' not in st.session_state:
+                st.session_state.process_message = False
                 
-                # Display user message
-                with st.chat_message("user"):
-                    st.markdown(user_query)
+            if st.session_state.process_message and len(st.session_state.chat_messages) > 0:
+                # Get the last user message
+                user_message = st.session_state.chat_messages[-1]["content"]
                 
-                # Generate and display assistant response
-                with st.chat_message("assistant"):
-                    message_placeholder = st.empty()
-                    
-                    # Get the chat bot and generate response
-                    chat_bot = get_chat_bot()
-                    
-                    # Prepare chat history for context (exclude the latest user message)
-                    chat_history = st.session_state.chat_messages[:-1] if len(st.session_state.chat_messages) > 1 else None
-                    
-                    # Generate response
-                    with st.spinner("Searching book content..."):
-                        response = chat_bot.answer_question(user_query, chat_history)
-                    
-                    # Display response
-                    message_placeholder.markdown(response)
-                    
-                    # Add assistant message to chat history
-                    st.session_state.chat_messages.append({"role": "assistant", "content": response})
+                # Get the chat bot and generate response
+                chat_bot = get_chat_bot()
+                
+                # Prepare chat history for context (exclude the latest user message)
+                chat_history = st.session_state.chat_messages[:-1] if len(st.session_state.chat_messages) > 1 else None
+                
+                # Generate response
+                with st.spinner("Searching book content..."):
+                    response = chat_bot.answer_question(user_message, chat_history)
+                
+                # Add assistant message to chat history
+                st.session_state.chat_messages.append({"role": "assistant", "content": response})
+                
+                # Reset processing flag
+                st.session_state.process_message = False
+                
+                # Refresh the UI
+                st.experimental_rerun()
         
         # If no book has been uploaded yet
         elif not st.session_state.text_extracted:

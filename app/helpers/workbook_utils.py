@@ -46,7 +46,7 @@ def generate_workbook(summary):
         # Initialize the client
         client = OpenAI(api_key=api_key)
         
-        # Update from GPT-3.5-turbo to GPT-4o mini
+        # Use GPT-4o-mini for better quality with reasonable cost
         model = "gpt-4o-mini"
         
         with st.spinner("Creating workbook exercises..."):
@@ -83,7 +83,7 @@ def generate_workbook(summary):
             try:
                 # Try again with standard GPT-3.5-turbo
                 fallback_response = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
+                    model="gpt-4o-mini",
                     messages=[
                         {"role": "system", "content": "You are a helpful assistant that creates practical workbooks from non-fiction books, focusing on extracting actionable exercises that readers can implement in their daily lives."},
                         {"role": "user", "content": WORKBOOK_PROMPT.format(summary=summary)}

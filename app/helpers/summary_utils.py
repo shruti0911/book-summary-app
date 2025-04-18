@@ -27,14 +27,14 @@ Create a summary of this non-fiction book that is well-structured for mind mappi
 
 Format the summary hierarchically using clear headings and bullet points:
 
-# [BOOK TITLE/CENTRAL CONCEPT]
+# [BOOK TITLE]
 
-## Major Theme 1
+## [Major Theme 1]
 - Key point 1a
 - Key point 1b
 - Key point 1c
 
-## Major Theme 2
+## [Major Theme 2]
 - Key point 2a
 - Key point 2b
 - Key point 2c

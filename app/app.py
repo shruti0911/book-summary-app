@@ -68,7 +68,7 @@ with st.sidebar:
         
         **Note:** OpenAI may change their process. If these instructions are outdated, visit [OpenAI's documentation](https://platform.openai.com/docs/quickstart) for the most current information.
         
-        **Cost:** Using this app will consume OpenAI API credits. The app uses GPT-3.5-Turbo for both summaries and workbooks. Check OpenAI's [pricing page](https://openai.com/pricing) for current rates.
+        **Cost:** Using this app will consume OpenAI API credits. The app uses GPT-4 for both summaries and workbooks. Check OpenAI's [pricing page](https://openai.com/pricing) for current rates.
         """)
     
     # Feature selection with explanations
@@ -184,11 +184,11 @@ if uploaded_file and api_key:
         try:
             with st.spinner("Preparing text for processing..."):
                 # Implement direct chunking instead of using the function
-                book_size = len(st.session_state.text)
-                st.write(f"Book size: {book_size} characters")
+                book_size = len(text)
+                # st.write(f"Book size: {book_size} characters")
                 
                 # Direct implementation of chunking with larger chunks
-                st.write("Using direct chunking with large chunks")
+                # st.write("Using direct chunking with large chunks")
                 
                 # Define larger chunk size for big books
                 LARGE_CHUNK_SIZE = 4000  # tokens
@@ -196,10 +196,10 @@ if uploaded_file and api_key:
                 
                 try:
                     import tiktoken
-                    tokenizer = tiktoken.encoding_for_model("gpt-3.5-turbo")
-                    tokens = tokenizer.encode(st.session_state.text)
+                    tokenizer = tiktoken.encoding_for_model("gpt-4")
+                    tokens = tokenizer.encode(text)
                     
-                    st.write(f"Book contains {len(tokens)} tokens")
+                    # st.write(f"Book contains {len(tokens)} tokens")
                     
                     # Create chunks with large size
                     chunks = []
@@ -214,7 +214,7 @@ if uploaded_file and api_key:
                         # Move start position for next chunk, with overlap
                         start += LARGE_CHUNK_SIZE - OVERLAP_SIZE
                     
-                    st.write(f"Initial chunks: {len(chunks)}")
+                    # st.write(f"Initial chunks: {len(chunks)}")
                     
                     # Limit to max 100 chunks if needed
                     MAX_CHUNKS = 50  # Lower for even better efficiency
@@ -234,7 +234,7 @@ if uploaded_file and api_key:
                 except Exception as e:
                     st.error(f"Error in chunking: {str(e)}")
                     # Fallback to original function
-                    chunks = chunk_text(st.session_state.text, max_tokens=2000, overlap=100)
+                    chunks = chunk_text(text, max_tokens=2000, overlap=100)
                     st.write(f"Using fallback chunking: {len(chunks)} chunks")
 
             # Process the chunks to create a unified summary
@@ -397,36 +397,28 @@ if uploaded_file and api_key:
                         st.stop()
                     
                     # Implement direct chunking with large chunks 
-                    book_size = len(st.session_state.text)
-                    st.write(f"Book size: {book_size} characters")
+                    book_size = len(text)
+                    # st.write(f"Book size: {book_size} characters")
                     
                     # Direct implementation of chunking with larger chunks
-                    import tiktoken
+                    # st.write("Using direct chunking with large chunks")
                     
                     # Define larger chunk size for big books
                     LARGE_CHUNK_SIZE = 4000  # tokens
                     OVERLAP_SIZE = 150  # tokens
                     
                     try:
-                        tokenizer = tiktoken.encoding_for_model("gpt-3.5-turbo")
-                        tokens = tokenizer.encode(st.session_state.text)
+                        tokenizer = tiktoken.encoding_for_model("gpt-4")
+                        tokens = tokenizer.encode(text)
                         
-                        st.write(f"Book contains {len(tokens)} tokens")
+                        # st.write(f"Book contains {len(tokens)} tokens")
                         
-                        # Create chunks with large size
-                        chunks = []
-                        start = 0
+                        # Simple character-based chunking as fallback
+                        max_chunk_size = LARGE_CHUNK_SIZE
                         
-                        while start < len(tokens):
-                            end = min(start + LARGE_CHUNK_SIZE, len(tokens))
-                            chunk_tokens = tokens[start:end]
-                            chunk_text = tokenizer.decode(chunk_tokens)
-                            chunks.append(chunk_text)
-                            
-                            # Move start position for next chunk, with overlap
-                            start += LARGE_CHUNK_SIZE - OVERLAP_SIZE
-                        
-                        st.write(f"Initial chunks: {len(chunks)}")
+                        # Simple character-based chunking as fallback
+                        chunks = [text[i:i+max_chunk_size] for i in range(0, len(text), max_chunk_size)]
+                        # st.write(f"Initial chunks: {len(chunks)}")
                         
                         # Limit to max 50 chunks if needed
                         MAX_CHUNKS = 50  # Lower for efficiency
@@ -446,7 +438,7 @@ if uploaded_file and api_key:
                     except Exception as e:
                         st.error(f"Error in chunking: {str(e)}")
                         # Fallback to standard chunking
-                        chunks = chunk_text(st.session_state.text, max_tokens=1000)
+                        chunks = chunk_text(text, max_tokens=1000)
                         st.write(f"Using fallback chunking: {len(chunks)} chunks")
                     
                     # Initialize the chat bot with chunks

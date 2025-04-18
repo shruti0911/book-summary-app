@@ -46,8 +46,8 @@ def generate_workbook(summary):
         # Initialize the client
         client = OpenAI(api_key=api_key)
         
-        # Use GPT-3.5-turbo for cost efficiency during testing
-        model = "gpt-3.5-turbo-0125"
+        # Use GPT-4 for better quality workbooks
+        model = "gpt-4"
         
         with st.spinner("Creating workbook exercises..."):
             # Make the API call
@@ -77,13 +77,13 @@ def generate_workbook(summary):
         
         # Check for model-specific errors
         elif "model_not_found" in error_message or "does not exist" in error_message:
-            # Fall back to standard GPT-3.5-turbo if specific version isn't available
-            st.warning("Specified GPT-3.5-turbo version not available. Falling back to standard GPT-3.5-turbo...")
+            # Fall back to standard GPT-4 if specific version isn't available
+            st.warning("Specified GPT-4 version not available. Falling back to standard GPT-4...")
             
             try:
-                # Try again with standard GPT-3.5-turbo
+                # Try again with standard GPT-4
                 fallback_response = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
+                    model="gpt-4",
                     messages=[
                         {"role": "system", "content": "You are a helpful assistant that creates practical workbooks from non-fiction books, focusing on extracting actionable exercises that readers can implement in their daily lives."},
                         {"role": "user", "content": WORKBOOK_PROMPT.format(summary=summary)}

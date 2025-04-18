@@ -72,8 +72,8 @@ def summarize_chunk(chunk, is_final=True):
         # Select the appropriate prompt based on whether this is a final summary or not
         prompt = FINAL_PROMPT if is_final else CHUNK_PROMPT
         
-        # Always use GPT-3.5-turbo to save on credits
-        model = "gpt-3.5-turbo"
+        # Always use GPT-4 for better summaries
+        model = "gpt-4"
         
         # Using the new OpenAI API format
         response = client.chat.completions.create(

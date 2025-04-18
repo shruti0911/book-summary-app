@@ -49,6 +49,19 @@ Notes:
 - Focus on ideas rather than summaries of chapters
 - Maintain the book's original insights and principles
 - Create clear hierarchical relationships between concepts
+
+Example:
+# [The Art of War]
+
+## [Strategy]
+- Key point 1a
+- Key point 1b
+- Key point 1c
+
+## [Leadership]
+- Key point 2a
+- Key point 2b
+- Key point 2c
 """
 
 def summarize_chunk(chunk, is_final=True):

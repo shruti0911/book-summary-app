@@ -192,6 +192,7 @@ if uploaded_file and api_key:
                 
                 try:
                     import tiktoken
+                    # Keep using gpt-3.5-turbo tokenizer for chunking since it's just for tokenization
                     tokenizer = tiktoken.encoding_for_model("gpt-3.5-turbo")
                     tokens = tokenizer.encode(st.session_state.text)
                     
@@ -397,6 +398,7 @@ if uploaded_file and api_key:
                     OVERLAP_SIZE = 150  # tokens
                     
                     try:
+                        # Keep using gpt-3.5-turbo tokenizer for chunking since it's just for tokenization
                         tokenizer = tiktoken.encoding_for_model("gpt-3.5-turbo")
                         tokens = tokenizer.encode(st.session_state.text)
                         

@@ -46,8 +46,8 @@ def generate_workbook(summary):
         # Initialize the client
         client = OpenAI(api_key=api_key)
         
-        # Use GPT-3.5-turbo for cost efficiency during testing
-        model = "gpt-3.5-turbo-0125"
+        # Update from GPT-3.5-turbo to GPT-4o mini
+        model = "gpt-4o-mini"
         
         with st.spinner("Creating workbook exercises..."):
             # Make the API call

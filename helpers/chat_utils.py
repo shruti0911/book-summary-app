@@ -196,7 +196,7 @@ class BookChatBot:
         
         try:
             response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo-0125",
+                model="gpt-4o-mini",
                 messages=messages,
                 temperature=0.5
             )

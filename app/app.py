@@ -2,22 +2,22 @@ import streamlit as st
 import os
 import sys
 
-# Add the parent directory to the Python path to make app a package
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-# Now import with correct path
-from helpers.pdf_utils import extract_text_from_pdf, chunk_text
-from helpers.summary_utils import summarize_chunk
-from helpers.miro_utils import create_miro_mindmap
-from helpers.workbook_utils import generate_workbook
-from helpers.chat_utils import get_chat_bot
-
 # Set page config must be the first Streamlit command called
 st.set_page_config(
     page_title="Non-fiction Summarizer", 
     layout="wide",
     page_icon="📘"
 )
+
+# Add the parent directory to the Python path to make helpers accessible
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Import from helpers directly
+from helpers.pdf_utils import extract_text_from_pdf, chunk_text
+from helpers.summary_utils import summarize_chunk
+from helpers.miro_utils import create_miro_mindmap
+from helpers.workbook_utils import generate_workbook
+from helpers.chat_utils import get_chat_bot
 
 # Initialize session state to store generated summaries
 if 'final_summary' not in st.session_state:
@@ -72,7 +72,7 @@ with st.sidebar:
         
         **Note:** OpenAI may change their process. If these instructions are outdated, visit [OpenAI's documentation](https://platform.openai.com/docs/quickstart) for the most current information.
         
-        **Cost:** Using this app will consume OpenAI API credits. The app uses GPT-4 for both summaries and workbooks. Check OpenAI's [pricing page](https://openai.com/pricing) for current rates.
+        **Cost:** Using this app will consume OpenAI API credits. The app uses GPT-4o mini for both summaries and workbooks. Check OpenAI's [pricing page](https://openai.com/pricing) for current rates.
         """)
     
     # Feature selection with explanations
@@ -200,7 +200,7 @@ if uploaded_file and api_key:
                 
                 try:
                     import tiktoken
-                    tokenizer = tiktoken.encoding_for_model("gpt-4")
+                    tokenizer = tiktoken.encoding_for_model("gpt-4o-mini")
                     tokens = tokenizer.encode(text)
                     
                     # st.write(f"Book contains {len(tokens)} tokens")
@@ -419,7 +419,7 @@ if uploaded_file and api_key:
                     OVERLAP_SIZE = 150  # tokens
                     
                     try:
-                        tokenizer = tiktoken.encoding_for_model("gpt-4")
+                        tokenizer = tiktoken.encoding_for_model("gpt-4o-mini")
                         tokens = tokenizer.encode(text)
                         
                         # st.write(f"Book contains {len(tokens)} tokens")

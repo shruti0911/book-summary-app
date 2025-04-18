@@ -1,1 +1,1 @@
-# Book Summarizer helpers package 
+# This file makes the helpers directory a Python package 

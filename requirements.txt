@@ -1,19 +1,7 @@
 streamlit==1.32.0
 openai==1.74.0
 tiktoken==0.9.0
-<<<<<<< HEAD
-PyMuPDF>=1.22.0
+PyMuPDF==1.25.5
 PyPDF2==3.0.1
-requests==2.31.0
-numpy>=1.24.3
-python-dotenv==1.0.0
-watchdog>=6.0.0
-setuptools>=65.5.0 
-=======
-PyMuPDF==1.22.0  # Using a version compatible with Python 3.9
-PyPDF2==3.0.1
-requests==2.31.0
-numpy==1.24.3
-python-dotenv==1.0.0
-watchdog==6.0.0  # For better Streamlit file watching performance
->>>>>>> 302ff189f032b65f2c34d95b2c431494e2490dc3
+requests==2.32.3
+numpy==1.25.0 
